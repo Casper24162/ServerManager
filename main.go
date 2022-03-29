@@ -1,16 +1,14 @@
 package main
 
 import (
-	f "fmt"
 	"log"
 	"net/http"
+
+	"github.com/Casper24162/ServerManager/requests"
 )
 
 func main() {
-	http.HandleFunc("/", httpHandler)
-	log.Fatal(http.ListenAndServe(":2424", nil))
-}
+	go http.HandleFunc("/make", requests.MakeServer)
 
-func httpHandler(w http.ResponseWriter, r *http.Request) {
-	f.Println("Hello World!")
+	log.Fatal(http.ListenAndServe(":2424", nil))
 }
