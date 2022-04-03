@@ -1,7 +1,6 @@
 package requests
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -23,7 +22,7 @@ type response struct {
 func MakeServer(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusUnsupportedMediaType)))
-		writeResponse(w, []byte("'Content-Type' isn't 'application/json'"), http.StatusUnsupportedMediaType)
+		writeResponse(w, "'Content-Type' isn't 'application/json'", http.StatusUnsupportedMediaType)
 		return
 	}
 
@@ -31,18 +30,18 @@ func MakeServer(w http.ResponseWriter, r *http.Request) {
 	errDecodeJSON := jsonf.DecodeJSON(r.Body, &jsonData)
 	if errDecodeJSON != nil {
 		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
-		writeResponse(w, []byte("Body can't be decoded, please check if your body is formatted correctly."), http.StatusBadRequest)
+		writeResponse(w, "Body can't be decoded, please check if your body is formatted correctly.", http.StatusBadRequest)
 		return
 	}
 
 	switch {
 	case jsonData.ServerType == "":
 		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
-		writeResponse(w, []byte("'server-type' can't be nil."), http.StatusBadRequest)
+		writeResponse(w, "'server-type' can't be nil.", http.StatusBadRequest)
 		return
 	case jsonData.ServerVersion == "":
 		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
-		writeResponse(w, []byte("'server-version' can't be nil."), http.StatusBadRequest)
+		writeResponse(w, "'server-version' can't be nil.", http.StatusBadRequest)
 		return
 	}
 
@@ -50,14 +49,12 @@ func MakeServer(w http.ResponseWriter, r *http.Request) {
 
 	// Unzip tar/gz server file and execute 'exec.sh'
 
-	writeResponse(w, []byte("Succes!"), http.StatusOK)
+	writeResponse(w, "Succes!", http.StatusOK)
 }
 
-func writeResponse(w http.ResponseWriter, message []byte, code int) {
-	var jsonStruct response
-	encoder := json.NewEncoder(bytes.NewBuffer(message))
-
-	encodeErr := encoder.Encode(jsonStruct)
+func writeResponse(w http.ResponseWriter, message string, code int) {
+	jsonStruct := response{Message: message}
+	encodeErr := json.NewEncoder(w).Encode(jsonStruct)
 	if encodeErr != nil {
 		log.Println(f.Format("red", "● Internal server error when encoding response!"))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -65,5 +62,5 @@ func writeResponse(w http.ResponseWriter, message []byte, code int) {
 	}
 
 	w.WriteHeader(code)
-	w.Write(message)
+	w.Write(nil)
 }
