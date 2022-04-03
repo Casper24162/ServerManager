@@ -53,14 +53,12 @@ func MakeServer(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeResponse(w http.ResponseWriter, message string, code int) {
+	w.WriteHeader(code)
+
 	jsonStruct := response{Message: message}
 	encodeErr := json.NewEncoder(w).Encode(jsonStruct)
 	if encodeErr != nil {
 		log.Println(f.Format("red", "● Internal server error when encoding response!"))
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
 	}
-
-	w.WriteHeader(code)
-	w.Write(nil)
 }
