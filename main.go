@@ -22,11 +22,10 @@ func main() {
 	if errReadConfig != nil {
 		log.Fatalln(errReadConfig)
 	}
-	log.Print(configData)
 
 	// HTTP Endpoints
 	http.HandleFunc("/make", requests.MakeServer)
 
-	log.Println(f.Format("green", fmt.Sprintf("Server running on %v:%v", configData.Address, fmt.Sprint(configData.Port))))
+	log.Println(f.Format("green", fmt.Sprintf("● Server running on %v:%v", configData.Address, fmt.Sprint(configData.Port))))
 	http.ListenAndServe(fmt.Sprintf("%v:%v", configData.Address, fmt.Sprint(configData.Port)), nil)
 }

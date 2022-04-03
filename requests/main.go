@@ -1,6 +1,8 @@
 package requests
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,46 +11,59 @@ import (
 	"github.com/Casper24162/ServerManager/jsonf"
 )
 
-type jsonDataStruct struct {
-	ServerType    string `json:"Server-Type"`
-	ServerVersion string `json:"Server-Version"`
+type requestMake struct {
+	ServerType    string `json:"server-type"`
+	ServerVersion string `json:"server-version"`
+}
+
+type response struct {
+	Message string `json:"message"`
 }
 
 func MakeServer(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
-		log.Println(f.Format("yellow", fmt.Sprintf("Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusUnsupportedMediaType)))
-		writeResponse(w, http.StatusUnsupportedMediaType)
+		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusUnsupportedMediaType)))
+		writeResponse(w, []byte("'Content-Type' isn't 'application/json'"), http.StatusUnsupportedMediaType)
 		return
 	}
 
-	var jsonData jsonDataStruct
+	var jsonData requestMake
 	errDecodeJSON := jsonf.DecodeJSON(r.Body, &jsonData)
 	if errDecodeJSON != nil {
-		log.Println(f.Format("yellow", fmt.Sprintf("Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
-		writeResponse(w, http.StatusBadRequest)
+		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
+		writeResponse(w, []byte("Body can't be decoded, please check if your body is formatted correctly."), http.StatusBadRequest)
 		return
 	}
 
 	switch {
 	case jsonData.ServerType == "":
-		log.Println(f.Format("yellow", fmt.Sprintf("Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
-		writeResponse(w, http.StatusBadRequest)
+		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
+		writeResponse(w, []byte("'server-type' can't be nil."), http.StatusBadRequest)
 		return
 	case jsonData.ServerVersion == "":
-		log.Println(f.Format("yellow", fmt.Sprintf("Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
-		writeResponse(w, http.StatusBadRequest)
+		log.Println(f.Format("yellow", fmt.Sprintf("● Got bad request from %v, returned HTTP:%v", r.RemoteAddr, http.StatusBadRequest)))
+		writeResponse(w, []byte("'server-version' can't be nil."), http.StatusBadRequest)
 		return
 	}
 
-	log.Println(f.Format("green", fmt.Sprintf("Got request from %v to create server of type %v:%v", r.RemoteAddr, jsonData.ServerType, jsonData.ServerVersion)))
+	log.Println(f.Format("green", fmt.Sprintf("● Got request from %v to create server of type %v:%v", r.RemoteAddr, jsonData.ServerType, jsonData.ServerVersion)))
 
 	// Unzip tar/gz server file and execute 'exec.sh'
 
-	writeResponse(w, http.StatusOK)
+	writeResponse(w, []byte("Succes!"), http.StatusOK)
 }
 
-func writeResponse(w http.ResponseWriter, code int) {
-	// Add support for json messages
+func writeResponse(w http.ResponseWriter, message []byte, code int) {
+	var jsonStruct response
+	encoder := json.NewEncoder(bytes.NewBuffer(message))
+
+	encodeErr := encoder.Encode(jsonStruct)
+	if encodeErr != nil {
+		log.Println(f.Format("red", "● Internal server error when encoding response!"))
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(nil)
+	}
+
 	w.WriteHeader(code)
-	w.Write(nil)
+	w.Write(message)
 }
